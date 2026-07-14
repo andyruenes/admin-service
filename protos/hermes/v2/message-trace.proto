@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package hermes;
+
+service MessageTraceService {
+    rpc GetSentMessages (GetSentMessagesRequest) returns (GetSentMessagesResponse);
+}
+
+message GetSentMessagesRequest {
+    string accountId = 1;
+    string deliveryChannel = 2;
+    string startDate = 3;
+    string endDate = 4;
+    int32 page = 5;
+    int32 limit = 6;
+}
+
+message AccountInfo {
+    string id = 1;
+    string name = 2;
+}
+
+message SentMessage {
+    string id = 1;
+    string channel = 2;
+    string messageText = 3;
+    string status = 4;
+    string createdAt = 5;
+    AccountInfo account = 6;
+    repeated string recipients = 7;
+    string description = 8;
+    int32 logsCount = 9;
+}
+
+message GetSentMessagesResponse {
+    repeated SentMessage messages = 1;
+    int32 totalItems = 2;
+    int32 totalPages = 3;
+    int32 currentPage = 4;
+}

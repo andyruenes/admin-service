@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package lists;
+
+service ListService {
+    rpc findAll(Empty) returns (FindAllListsResponse);
+    rpc createList(CreateListInput) returns(Empty);
+    rpc updateList(UpdateListInput) returns(Empty);
+    rpc findOne(FindOneInput) returns (List);
+    rpc delete(FindOneInput) returns(Empty);
+    rpc addContact(ContactOperationInput) returns(Empty);
+    rpc removeContact(ContactOperationInput) returns(Empty);
+}
+
+service DeliveryService {
+    rpc sendMessageToList(SendMessageToListInput) returns(Empty);
+    rpc sendMessageToContact(SendMessageToContactInput) returns(Empty);
+}
+
+message SendMessageToContactInput {
+    string message = 1;
+    int32 contactId = 2;
+    string via = 3;
+}
+
+message SendMessageToListInput {
+    string message = 1;
+    int32 listId = 2;
+    string via = 3;
+}
+
+service ContactService {
+    rpc createContact(CreateContactInput) returns(Empty);
+    rpc updateContact(UpdateContactInput) returns(Empty);
+    rpc findAll(Empty) returns(FindAllContactsResponse);
+    rpc findOne(FindOneInput) returns(Contact);
+    rpc delete(FindOneInput) returns(Empty);
+}
+
+message CreateContactInput {
+    optional string address = 1;
+    optional string businessName = 2;
+    optional string email = 3;
+    optional int32 listId = 4;
+    string name = 5;
+    optional string observations = 6;
+    string phone = 7;
+}
+
+message FindAllContactsResponse {
+    repeated Contact contacts = 1;
+}
+
+message UpdateContactInput {
+    optional string address = 1;
+    optional string businessName = 2;
+    optional string email = 3;
+    optional int32 listId = 4;
+    optional string name = 5;
+    optional string observations = 6;
+    optional string phone = 7;
+    int32 id = 8;
+}
+
+message ContactOperationInput {
+    int32 contactId = 1;
+    int32 listId = 2;
+}
+
+message FindOneInput {
+    int32 id = 1;
+}
+
+message CreateListInput {
+    string name = 1;
+    string description = 2;
+}
+
+message UpdateListInput {
+    int32 id = 1;
+    optional string name = 2;
+    optional string description = 3;
+}
+
+message List {
+    int32 id = 1;
+    string name = 2;
+    string description = 3;
+    repeated Contact contacts = 4;
+}
+
+message FindAllListsResponse {
+    repeated List lists = 1;
+}
+
+message Empty {}
+
+message Contact {
+    int32 id = 1;
+    string name = 2;
+    optional string email = 3;
+    string phone = 4;
+    optional string listId = 5;
+    optional string observations = 6;
+    optional string address = 7;
+    optional string businessName = 8;
+}

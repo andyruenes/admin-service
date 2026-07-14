@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package hermes;
+
+message Empty {}
+
+message Notification {
+  string id = 1;
+  string userId = 2;
+  string eventCode = 3;
+  string subject = 4;
+  string email = 5;
+  string phone = 6;
+  map<string, string> vars = 7;
+  string status = 8;
+  string context = 9;
+  string createdAt = 10;
+  repeated Log logs = 11;
+  Event event = 12;
+}
+
+message Log {
+    string id = 1;
+    string notificationId = 2;
+    string status = 3;
+    string deliveryChannel = 4;
+    string description = 5;
+    string createdAt = 6;
+    Notification notification = 7;
+}
+
+message Event {
+    string id = 1;
+    string eventCode = 2;
+    string description = 3;
+    repeated string deliveryChannels = 4;
+    repeated string requiredVars = 5;
+    string createdAt = 6;
+    string updatedAt = 7;
+    repeated Notification notifications = 8;
+}
+
+message Stats {
+    string sent = 1;
+    string notSent = 2;
+    string percent = 3;
+    string name = 4;
+}
+
+message InternalNotificationResponse {
+    string message = 1;
+}

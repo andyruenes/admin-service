@@ -1,0 +1,164 @@
+syntax = "proto3";
+
+package hermes;
+
+message Empty {}
+
+
+message Log {
+    string id = 1;
+    string notification_id = 2;
+    string status = 3;
+    string delivery_channel = 4;
+    string description = 5;
+    string created_at = 6;
+    NotificationModel notification = 7;
+}
+
+message Event {
+    string id = 1;
+    string event_code = 2;
+    string description = 3;
+    repeated string delivery_channels = 4;
+    repeated string required_vars = 5;
+    string created_at = 6;
+    string updated_at = 7;
+    repeated NotificationModel notifications = 8;
+}
+
+message Stats {
+    string sent = 1;
+    string notSent = 2;
+    string percent = 3;
+    string name = 4;
+}
+
+service EventService {
+    rpc getEvents(Empty) returns (GetEventResponse);
+    rpc getTemplate(GetTemplateRequest) returns (GetTemplateResponse);
+    rpc updateTemplate(UpdateTemplateRequest) returns (Empty);
+    rpc addDeliveryChannel(GetTemplateRequest) returns (Empty);
+    rpc removeDeliveryChannel(GetTemplateRequest) returns (Empty);
+}
+
+message GetEventResponse {
+    repeated Event events = 1;
+}
+
+message GetTemplateRequest {
+    string id = 1;
+    string deliveryChannel = 2;
+}
+
+message GetTemplateResponse {
+    string content = 1;
+}
+
+message UpdateTemplateRequest {
+    string id = 1;
+    string deliveryChannel = 2;
+    string content = 3;
+}
+
+service NotificationService {
+    rpc getStats (GetStatsRequest) returns (GetStatsResponse);
+    rpc getInternals (GetInternalsRequest) returns (GetInternalsResponse);
+    
+}
+
+service NotificationOutService {
+    rpc find (GetNotificationRequest) returns (GetNotificationResponse);
+    rpc GetNotificationStatus (GetNotificationStatusRequest) returns (GetNotificationStatusResponse);
+}
+
+message GetNotificationStatusRequest {
+    string external_id = 1;
+}
+
+message GetNotificationStatusResponse {
+    bool found = 1;
+    string notification_status = 2;
+    int32 successful_count = 3;
+    int32 failed_count = 4;
+}
+
+message GetNotificationRequest {
+    string search = 1;
+    string status = 2;
+    string eventCode = 3;
+    string deliveryChannel = 4;
+    string startDate = 5;
+    string endDate = 6;
+    int32 page = 7;
+    int32 limit = 8;
+    int32 skip = 9;
+}
+
+message NotificationModel {
+    string id = 1;
+    string subject = 2;
+    string event_code = 3;
+    string status = 4;
+    string user_id = 5;
+    string email = 6;
+}
+
+message GetNotificationResponse {
+    repeated NotificationModel items = 1;
+    int32 totalPages = 2;
+    int32 totalItems = 3;
+    int32 currentPage = 4;
+}
+
+message GetStatsRequest {
+    string startDate = 1;
+    string endDate = 2;
+}
+
+message GetStatsResponse {
+    repeated Stats stats = 1;
+}
+
+message GetInternalsRequest {
+    string context = 1;
+    int32 page = 2;
+    string userId = 3;
+}
+
+message GetInternalsResponse {
+    int32 totalPages = 2;
+    int32 totalItems = 3;
+    int32 currentPage = 4;
+    int32 pageSize = 5;
+    repeated string messages = 6;
+}
+
+message SetFirebaseCredentialsRequest {
+    string apkOrigin = 1;
+    string dni = 5;
+    string projectId = 2;
+    string clientEmail = 3;
+    string privateKey = 4;
+}
+
+message SetFirebaseCredentialsResponse {
+    bool success = 1;
+    string message = 2;
+}
+
+message FirebaseProjectSummary {
+    string apkOrigin = 1;
+    string dni = 2;
+    bool hasCredentials = 3;
+    string projectId = 4;
+    bool isActive = 5;
+}
+
+message GetAllFirebaseProjectsResponse {
+    repeated FirebaseProjectSummary projects = 1;
+}
+
+service FirebaseService {
+    rpc SetFirebaseCredentials(SetFirebaseCredentialsRequest) returns (SetFirebaseCredentialsResponse);
+    rpc GetAllFirebaseProjects(Empty) returns (GetAllFirebaseProjectsResponse);
+}

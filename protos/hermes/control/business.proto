@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package business;
+
+service BusinessService {
+    rpc deductCredits (DeductCreditsRequest) returns (DeductCreditsResponse);
+    rpc getCreditsBalance (GetCreditsBalanceRequest) returns (GetCreditsBalanceResponse);
+}
+
+message DeductCreditsRequest {
+    string businessDni = 1;
+    int32 quantity = 2;
+    string description = 3;
+    string deliveryChannel = 4;
+}
+
+message DeductCreditsResponse {
+    bool success = 1;
+    string message = 2;
+    int32 remainingBalance = 3;
+}
+
+message GetCreditsBalanceRequest {
+    string businessDni = 1;
+    string deliveryChannel = 2;
+}
+
+message GetCreditsBalanceResponse {
+    string businessDni = 1;
+    int32 balance = 2;
+    string deliveryChannel = 3;
+}

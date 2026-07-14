@@ -1,0 +1,36 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: dev.Dockerfile
+    ports:
+      # Host 8001 matches monorepo docker-compose service admin-api
+      - "8001:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://root:root@postgres:5432/admin_service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./alembic:/app/alembic
+      - ./app:/app/app
+      - ./tests:/app/tests
+
+  postgres:
+    image: postgres:18-alpine
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: admin_service
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d admin_service"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+volumes:
+  postgres_data:

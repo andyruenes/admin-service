@@ -1,0 +1,187 @@
+# Unified stack: conversation-service, admin-service, agent-service (LangGraph + RAG), Postgres (x2), RabbitMQ, Redis, Chroma.
+# Dev: agent / admin-api / conversation-api bind-mount app (and alembic/tests where listed); images use uvicorn --reload.
+# Rebuild images after pyproject/dependency changes. Optional: `docker compose --profile test up` for PostgREST + test Postgres.
+#
+# Ports (host): 8000 conversation, 8001 admin, 8002 agent HTTP, 8003 Chroma, 5432 conversation DB, 5433 admin DB, 5672/15672 RabbitMQ, 6379 Redis.
+# agent-service LLM: defaults suit a local OpenAI-compatible API on the host (Linux: 172.17.0.1:9100; override via env or `.env`).
+# Override OPENAI_API_KEY / OPENAI_BASE_URL when using real keys or another host.
+
+services:
+  postgres-conversation:
+    image: postgres:18-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: conversation_service
+    volumes:
+      - postgres_conversation_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d conversation_service"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgres-admin:
+    image: postgres:18-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: admin_service
+    volumes:
+      - postgres_admin_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d admin_service"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: app
+      RABBITMQ_DEFAULT_PASS: app
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  chromadb:
+    image: chromadb/chroma:latest
+    ports:
+      - "8003:8000"
+    volumes:
+      - chroma_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/8000'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  agent-service:
+    build:
+      context: ./agent-service
+      dockerfile: dev.Dockerfile
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./agent-service/app:/app/app
+    ports:
+      - "8002:8000"
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-dummy}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-http://172.17.0.1:9100/v1}
+      RABBITMQ_URL: amqp://app:app@rabbitmq:5672/
+      REDIS_URL: redis://redis:6379/0
+      CHROMA_HOST: http://chromadb:8000
+      ADMIN_SERVICE_URL: http://admin-api:8000
+      CONVERSATION_SERVICE_URL: http://conversation-api:8000
+      ENVIRONMENT: dev
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      chromadb:
+        condition: service_healthy
+
+  conversation-api:
+    build:
+      context: ./conversation-service
+      dockerfile: dev.Dockerfile
+    stdin_open: true
+    tty: true
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://root:root@postgres-conversation:5432/conversation_service
+      RABBITMQ_URL: amqp://app:app@rabbitmq:5672/
+      AGENT_SERVICE_URL: http://agent-service:8000
+      ENVIRONMENT: dev
+    depends_on:
+      postgres-conversation:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ./conversation-service/alembic:/app/alembic
+      - ./conversation-service/app:/app/app
+      - ./conversation-service/tests:/app/tests
+
+  admin-api:
+    build:
+      context: ./admin-service
+      dockerfile: dev.Dockerfile
+    stdin_open: true
+    tty: true
+    ports:
+      - "8001:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://root:root@postgres-admin:5432/admin_service
+      AGENT_SERVICE_URL: http://agent-service:8000
+    depends_on:
+      postgres-admin:
+        condition: service_healthy
+    volumes:
+      - ./admin-service/alembic:/app/alembic
+      - ./admin-service/app:/app/app
+      - ./admin-service/tests:/app/tests
+
+  # --- profile: test (tests/docker-compose legacy stack) ---
+  test-postgres:
+    profiles: ["test"]
+    image: postgres:16
+    container_name: proc_datos_test_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: admin_db
+    ports:
+      - "5435:5432"
+    volumes:
+      - test_postgres_data:/var/lib/postgresql/data
+      - ./tests/seed/seed.sql:/docker-entrypoint-initdb.d/01-seed.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d admin_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgrest:
+    profiles: ["test"]
+    image: postgrest/postgrest:latest
+    container_name: proc_datos_postgrest
+    restart: unless-stopped
+    depends_on:
+      test-postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      PGRST_DB_URI: postgres://admin:admin@test-postgres:5432/admin_db
+      PGRST_DB_SCHEMA: public
+      PGRST_DB_ANON_ROLE: web_anon
+
+volumes:
+  postgres_conversation_data:
+  postgres_admin_data:
+  chroma_data:
+  test_postgres_data:

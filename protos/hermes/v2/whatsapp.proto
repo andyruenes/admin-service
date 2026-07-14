@@ -1,0 +1,126 @@
+syntax = "proto3";
+
+package hermes;
+
+enum BotStatus {
+  BOT_STATUS_UNSPECIFIED = 0;
+  BOT_STATUS_CONNECTED = 1;
+  BOT_STATUS_DISCONNECTED = 2;
+  BOT_STATUS_STANDBY = 3;
+  BOT_STATUS_QR_AVAILABLE = 4;
+  BOT_STATUS_ERROR = 5;
+  BOT_STATUS_CONNECTING = 6;
+  BOT_STATUS_RECONNECTING = 7;
+}
+
+message CreateAccountRequest {
+  string businessDni = 1;
+  string chatbotId = 2;
+}
+
+message SetChatbotIdRequest {
+  string accountId = 1;
+  string chatbotId = 2;
+}
+
+message SetChatbotIdResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message CreateAccountResponse {
+  bool success = 1;
+  string accountId = 2;
+  string message = 3;
+}
+
+message RequestQRRequest {
+  string accountId = 1;
+}
+
+message RequestQRResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message GetBotStatusRequest {
+  string accountId = 1;
+}
+
+message GetBotStatusResponse {
+  string accountId = 1;
+  string status = 2;
+  string phoneNumber = 3;
+  string qrCode = 4;
+}
+
+message GetAccountByDniRequest {
+  string businessDni = 1;
+}
+
+message GetAccountByDniResponse {
+  string accountId = 1;
+  string status = 2;
+  string phoneNumber = 3;
+  string createdAt = 4;
+  string name = 5;
+  uint32 balance = 6;
+}
+
+message GetAccountRequest {
+  string accountId = 1;
+  string businessDni = 2;
+  string chatbotId = 3;
+}
+
+message GetAccountResponse {
+  string accountId = 1;
+  string status = 2;
+  string phoneNumber = 3;
+  string createdAt = 4;
+  string name = 5;
+}
+
+message ActivateAccountRequest {
+  string accountId = 1;
+  string businessDni = 2;
+}
+
+message ActivateAccountResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message DeactivateAccountRequest {
+  string accountId = 1;
+  string businessDni = 2;
+}
+
+message DeactivateAccountResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message BotUpdateRequest {
+  string accountId = 1;
+}
+
+message BotUpdateResponse {
+  string accountId = 1;
+  BotStatus status = 2;
+  string qrCode = 3;
+  string phoneNumber = 4;
+  string message = 5;
+}
+
+service WhatsappService {
+  rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse);
+  rpc RequestQR(RequestQRRequest) returns (RequestQRResponse);
+  rpc GetBotStatus(GetBotStatusRequest) returns (GetBotStatusResponse);
+  rpc GetAccountByDni(GetAccountByDniRequest) returns (GetAccountByDniResponse);
+  rpc ActivateAccount(ActivateAccountRequest) returns (ActivateAccountResponse);
+  rpc DeactivateAccount(DeactivateAccountRequest) returns (DeactivateAccountResponse);
+  rpc StreamBotUpdates(BotUpdateRequest) returns (stream BotUpdateResponse);
+  rpc SetChatbotId(SetChatbotIdRequest) returns (SetChatbotIdResponse);
+  rpc GetAccount(GetAccountRequest) returns (GetAccountResponse);
+}

@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package hermes;
+
+service EventService {
+    rpc getEvents(Empty) returns (GetEventResponse);
+    rpc getTemplate(GetTemplateRequest) returns (GetTemplateResponse);
+    rpc updateTemplate(UpdateTemplateRequest) returns (Empty);
+    rpc addDeliveryChannel(GetTemplateRequest) returns (Empty);
+    rpc removeDeliveryChannel(GetTemplateRequest) returns (Empty);
+}
+
+message GetEventResponse {
+    repeated Event events = 1;
+}
+
+message GetTemplateRequest {
+    string id = 1;
+    string deliveryChannel = 2;
+}
+
+message GetTemplateResponse {
+    string content = 1;
+}
+
+message UpdateTemplateRequest {
+    string id = 1;
+    string deliveryChannel = 2;
+    string content = 3;
+}
